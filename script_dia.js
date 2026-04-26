@@ -5,7 +5,7 @@ let semanaAtiva = null;
 let localAtivo = null;
 let terminalAtivo = null;
 
-/* ===== UTIL ===== */
+/* ===== EXTRAI DIA DA DATA ===== */
 function extrairDia(data) {
   if (data instanceof Date) return data.getDate();
 
@@ -34,7 +34,7 @@ fetch("Dados.xlsx")
     atualizarGrafico();
   });
 
-/* ===== OBTENÇÕES ===== */
+/* ===== LISTAS ===== */
 function obterSemanas() {
   return [...new Set(dados.map(d => d["Semana"]).filter(Boolean))];
 }

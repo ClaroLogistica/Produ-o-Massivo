@@ -35,7 +35,7 @@ h3 { margin-top: 25px; }
   margin-top: 20px;
 }
 
-/* KPI */
+/* KPIs */
 .kpi-container {
   display: flex;
   gap: 20px;
@@ -73,7 +73,6 @@ h3 { margin-top: 25px; }
 .sem-box {
   display: grid;
   grid-template-columns: 1fr 1fr auto;
-  align-items: center;
   background: linear-gradient(90deg, #0ea5e9, #2563eb);
   padding: 10px 14px;
   border-radius: 8px;

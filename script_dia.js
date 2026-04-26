@@ -38,7 +38,7 @@ function obterSemanas() {
 
 /* ===== LABORATÓRIOS ===== */
 function obterLaboratorios() {
-  return [...new Set(dados.map(d => d["Laboratório"]).filter(Boolean))];
+  return [...new Set(dados.map(d => d["Local"]).filter(Boolean))];
 }
 
 /* ===== BOTÕES SEMANA ===== */
@@ -103,7 +103,7 @@ function atualizarGrafico() {
 
   dados
     .filter(d => d["semana "] === semanaAtiva)
-    .filter(d => !laboratorioAtivo || d["Laboratório"] === laboratorioAtivo)
+    .filter(d => !laboratorioAtivo || d["Local"] === laboratorioAtivo)
     .forEach(d => {
       const dia = extrairDia(d.Data);
       if (dia) valores[dia - 1] += Number(d.Quantidade || 0);

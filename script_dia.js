@@ -1,9 +1,11 @@
 let dados = [];
 let chart = null;
+
 let semanaAtiva = null;
 let laboratorioAtivo = null;
+let terminalAtivo = null;
 
-/* ===== EXTRAIR DIA ===== */
+/* ===== EXTRAI DIA ===== */
 function extrairDia(data) {
   if (data instanceof Date) return data.getDate();
 
@@ -16,7 +18,7 @@ function extrairDia(data) {
   return isNaN(d) ? null : d.getDate();
 }
 
-/* ===== CARREGAR EXCEL ===== */
+/* ===== CARREGA EXCEL ===== */
 fetch("Dados.xlsx")
   .then(r => r.arrayBuffer())
   .then(b => {
@@ -25,74 +27,105 @@ fetch("Dados.xlsx")
     dados = XLSX.utils.sheet_to_json(sh);
 
     criarBotoesSemana();
-    criarBotoesLaboratorio();
+    criarBotoesLocal();
+    criarBotoesTerminais();
 
     semanaAtiva = obterSemanas()[0];
     atualizarGrafico();
   });
 
-/* ===== SEMANAS ===== */
+/* ===== DADOS ÚNICOS ===== */
 function obterSemanas() {
   return [...new Set(dados.map(d => d["semana "]).filter(Boolean))];
 }
 
-/* ===== LABORATÓRIOS ===== */
-function obterLaboratorios() {
+function obterLocais() {
   return [...new Set(dados.map(d => d["Local"]).filter(Boolean))];
 }
 
-/* ===== BOTÕES SEMANA ===== */
+function obterTerminais() {
+  return [...new Set(dados.map(d => d["Terminais"]).filter(Boolean))];
+}
+
+/* ===== BOTÕES ===== */
 function criarBotoesSemana() {
   const div = document.getElementById("botoes-semana");
   div.innerHTML = "";
 
-  obterSemanas().forEach((sem, i) => {
-    const btn = document.createElement("button");
-    btn.textContent = sem;
-    btn.className = i === 0 ? "ativo" : "";
+  obterSemanas().forEach((s, i) => {
+    const b = document.createElement("button");
+    b.textContent = s;
+    if (i === 0) b.classList.add("ativo");
 
-    btn.onclick = () => {
-      semanaAtiva = sem;
+    b.onclick = () => {
+      semanaAtiva = s;
       document.querySelectorAll("#botoes-semana button")
-        .forEach(b => b.classList.remove("ativo"));
-      btn.classList.add("ativo");
+        .forEach(x => x.classList.remove("ativo"));
+      b.classList.add("ativo");
       atualizarGrafico();
     };
 
-    div.appendChild(btn);
+    div.appendChild(b);
   });
 }
 
-/* ===== BOTÕES LAB ===== */
-function criarBotoesLaboratorio() {
+function criarBotoesLocal() {
   const div = document.getElementById("botoes-lab");
   div.innerHTML = "";
 
   const todos = document.createElement("button");
   todos.textContent = "Todos";
-  todos.className = "ativo";
+  todos.classList.add("ativo");
   todos.onclick = () => {
     laboratorioAtivo = null;
     document.querySelectorAll("#botoes-lab button")
-      .forEach(b => b.classList.remove("ativo"));
+      .forEach(x => x.classList.remove("ativo"));
     todos.classList.add("ativo");
     atualizarGrafico();
   };
   div.appendChild(todos);
 
-  obterLaboratorios().forEach(lab => {
-    const btn = document.createElement("button");
-    btn.textContent = lab;
-
-    btn.onclick = () => {
-      laboratorioAtivo = lab;
+  obterLocais().forEach(l => {
+    const b = document.createElement("button");
+    b.textContent = l;
+    b.onclick = () => {
+      laboratorioAtivo = l;
       document.querySelectorAll("#botoes-lab button")
-        .forEach(b => b.classList.remove("ativo"));
-      btn.classList.add("ativo");
+        .forEach(x => x.classList.remove("ativo"));
+      b.classList.add("ativo");
       atualizarGrafico();
     };
+    div.appendChild(b);
+  });
+}
 
-    div.appendChild(btn);
+function criarBotoesTerminais() {
+  const div = document.getElementById("botoes-terminais");
+  div.innerHTML = "";
+
+  const todos = document.createElement("button");
+  todos.textContent = "Todos";
+  todos.classList.add("ativo");
+  todos.onclick = () => {
+    terminalAtivo = null;
+    document.querySelectorAll("#botoes-terminais button")
+      .forEach(x => x.classList.remove("ativo"));
+    todos.classList.add("ativo");
+    atualizarGrafico();
+  };
+  div.appendChild(todos);
+
+  obterTerminais().forEach(t => {
+    const b = document.createElement("button");
+    b.textContent = t;
+    b.onclick = () => {
+      terminalAtivo = t;
+      document.querySelectorAll("#botoes-terminais button")
+        .forEach(x => x.classList.remove("ativo"));
+      b.classList.add("ativo");
+      atualizarGrafico();
+    };
+    div.appendChild(b);
   });
 }
 
@@ -104,18 +137,18 @@ function atualizarGrafico() {
   dados
     .filter(d => d["semana "] === semanaAtiva)
     .filter(d => !laboratorioAtivo || d["Local"] === laboratorioAtivo)
+    .filter(d => !terminalAtivo || d["Terminais"] === terminalAtivo)
     .forEach(d => {
       const dia = extrairDia(d.Data);
       if (dia) valores[dia - 1] += Number(d.Quantidade || 0);
     });
-const totalSelecionado = valores.reduce((a, b) => a + b, 0);
-document.getElementById("kpi-selecionado").textContent =
-  totalSelecionado.toLocaleString("pt-BR");
 
-// total do mês (independente de filtro)
-const totalMes = dados.reduce((s, d) => s + Number(d.Quantidade || 0), 0);
-document.getElementById("kpi-mes").textContent =
-  totalMes.toLocaleString("pt-BR");
+  document.getElementById("kpi-selecionado").textContent =
+    valores.reduce((a, b) => a + b, 0).toLocaleString("pt-BR");
+
+  document.getElementById("kpi-mes").textContent =
+    dados.reduce((s, d) => s + Number(d.Quantidade || 0), 0).toLocaleString("pt-BR");
+
   if (chart) chart.destroy();
 
   chart = new Chart(document.getElementById("graficoDiario"), {
@@ -135,9 +168,7 @@ document.getElementById("kpi-mes").textContent =
         x: { ticks: { color: "#e5e7eb" } },
         y: { beginAtZero: true, ticks: { color: "#e5e7eb" } }
       },
-      plugins: {
-        legend: { labels: { color: "#e5e7eb" } }
-      }
+      plugins: { legend: { labels: { color: "#e5e7eb" } } }
     },
     plugins: [{
       id: "valoresTopo",
@@ -149,10 +180,8 @@ document.getElementById("kpi-mes").textContent =
         ctx.textAlign = "center";
 
         chart.getDatasetMeta(0).data.forEach((bar, i) => {
-          const valor = chart.data.datasets[0].data[i];
-          if (valor > 0) {
-            ctx.fillText(valor.toLocaleString("pt-BR"), bar.x, bar.y - 5);
-          }
+          const v = chart.data.datasets[0].data[i];
+          if (v > 0) ctx.fillText(v.toLocaleString("pt-BR"), bar.x, bar.y - 5);
         });
 
         ctx.restore();

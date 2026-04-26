@@ -27,7 +27,6 @@ fetch("Dados.xlsx")
 
     criarBotoesLocal();
     criarBotoesTerminais();
-
     atualizarTudo();
   });
 
@@ -106,15 +105,15 @@ function atualizarTudo() {
 
 /* ===== KPIs ===== */
 function atualizarKPIs() {
-  const dadosBase = dados
+  const base = dados
     .filter(d => !localAtivo || d["Local"] === localAtivo)
     .filter(d => !terminalAtivo || d["Terminais"] === terminalAtivo);
 
-  const total = dadosBase.reduce((s, d) => s + Number(d.Quantidade || 0), 0);
+  const totalSelecionado = base.reduce((s, d) => s + Number(d.Quantidade || 0), 0);
+  const totalMes = dados.reduce((s, d) => s + Number(d.Quantidade || 0), 0);
 
-  document.getElementById("kpi-selecionado").textContent = total.toLocaleString("pt-BR");
-  document.getElementById("kpi-mes").textContent =
-    dados.reduce((s, d) => s + Number(d.Quantidade || 0), 0).toLocaleString("pt-BR");
+  document.getElementById("kpi-selecionado").textContent = totalSelecionado.toLocaleString("pt-BR");
+  document.getElementById("kpi-mes").textContent = totalMes.toLocaleString("pt-BR");
 }
 
 /* ===== GRÁFICO ===== */
@@ -158,14 +157,14 @@ function atualizarResumoSemanal() {
   const container = document.getElementById("resumo-semanal");
   container.innerHTML = "";
 
-  const dadosBase = dados
+  const base = dados
     .filter(d => !localAtivo || d["Local"] === localAtivo)
     .filter(d => !terminalAtivo || d["Terminais"] === terminalAtivo);
 
-  const totalMes = dadosBase.reduce((s, d) => s + Number(d.Quantidade || 0), 0);
+  const totalMes = base.reduce((s, d) => s + Number(d.Quantidade || 0), 0);
 
   const porSemana = {};
-  dadosBase.forEach(d => {
+  base.forEach(d => {
     const sem = d["Semana"];
     if (!sem) return;
     porSemana[sem] = (porSemana[sem] || 0) + Number(d.Quantidade || 0);

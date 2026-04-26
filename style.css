@@ -32,8 +32,10 @@ h3 { margin-top: 25px; }
   background: #020617;
   padding: 20px;
   border-radius: 14px;
+  margin-top: 20px;
 }
 
+/* KPI */
 .kpi-container {
   display: flex;
   gap: 20px;
@@ -58,31 +60,8 @@ h3 { margin-top: 25px; }
   margin-top: 4px;
   color: #94a3b8;
 }
-.resumo-semanal {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  max-width: 320px;
-}
 
-.sem-box {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: linear-gradient(90deg, #0ea5e9, #2563eb);
-  padding: 10px 14px;
-  border-radius: 8px;
-  color: white;
-  font-weight: bold;
-}
-
-.sem-box span {
-  font-size: 14px;
-}
-
-.sem-box .percentual {
-  opacity: 0.85;
-}
+/* RESUMO SEMANAL */
 .resumo-semanal {
   display: flex;
   flex-direction: column;
@@ -98,21 +77,10 @@ h3 { margin-top: 25px; }
   background: linear-gradient(90deg, #0ea5e9, #2563eb);
   padding: 10px 14px;
   border-radius: 8px;
-  color: #ffffff;
+  color: white;
   font-weight: bold;
 }
 
-.sem-box .sem {
-  font-size: 13px;
-}
-
-.sem-box .total {
-  font-size: 14px;
-  text-align: right;
-}
-
 .sem-box .percentual {
-  font-size: 13px;
   opacity: 0.85;
-  margin-left: 10px;
 }

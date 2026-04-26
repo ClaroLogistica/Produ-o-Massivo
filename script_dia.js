@@ -108,7 +108,14 @@ function atualizarGrafico() {
       const dia = extrairDia(d.Data);
       if (dia) valores[dia - 1] += Number(d.Quantidade || 0);
     });
+const totalSelecionado = valores.reduce((a, b) => a + b, 0);
+document.getElementById("kpi-selecionado").textContent =
+  totalSelecionado.toLocaleString("pt-BR");
 
+// total do mês (independente de filtro)
+const totalMes = dados.reduce((s, d) => s + Number(d.Quantidade || 0), 0);
+document.getElementById("kpi-mes").textContent =
+  totalMes.toLocaleString("pt-BR");
   if (chart) chart.destroy();
 
   chart = new Chart(document.getElementById("graficoDiario"), {

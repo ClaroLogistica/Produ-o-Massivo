@@ -1,12 +1,20 @@
 let dados = [];
 let chart;
 
-fetch('dados.xlsx')
-  .then(r => r.arrayBuffer())
-  .then(b => {
-    const wb = XLSX.read(b, { type: 'array' });
-    const sh = wb.Sheets[wb.SheetNames[0]];
-    dados = XLSX.utils.sheet_to_json(sh);
+fetch('dados.csv')
+  .then(r => r.text())
+  .then(t => {
+    const linhas = t.split('\n');
+    const cabecalho = linhas[0].split(',');
+
+    for (let i = 1; i < linhas.length; i++) {
+      if (!linhas[i].trim()) continue;
+      const obj = {};
+      const valores = linhas[i].split(',');
+      cabecalho.forEach((c, j) => obj[c.trim()] = valores[j]?.trim());
+      dados.push(obj);
+    }
+
     criarFiltros();
     atualizar();
   });
@@ -28,15 +36,21 @@ function atualizar() {
   });
 
   const labels = f.map(d => d.Descrição || d.Material);
-  const valores = f.map(d => d.Quantidade);
+  const valores = f.map(d => Number(d.Quantidade) || 0);
 
   if (chart) chart.destroy();
 
-  chart = new Chart(grafico, {
+  const ctx = document.getElementById('grafico');
+
+  chart = new Chart(ctx, {
     type: 'bar',
     data: {
       labels,
-      datasets: [{ label: 'Quantidade', data: valores }]
+      datasets: [{
+        label: 'Quantidade',
+        data: valores,
+        backgroundColor: '#0078D4'
+      }]
     }
   });
 }

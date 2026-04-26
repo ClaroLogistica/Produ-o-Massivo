@@ -1,11 +1,10 @@
 let dados = [];
 let chart = null;
 
-let semanaAtiva = null;
 let localAtivo = null;
 let terminalAtivo = null;
 
-/* ===== EXTRAI DIA DA DATA ===== */
+/* ===== EXTRAI DIA ===== */
 function extrairDia(data) {
   if (data instanceof Date) return data.getDate();
 
@@ -26,19 +25,13 @@ fetch("Dados.xlsx")
     const sh = wb.Sheets[wb.SheetNames[0]];
     dados = XLSX.utils.sheet_to_json(sh);
 
-    criarBotoesSemana();
     criarBotoesLocal();
     criarBotoesTerminais();
 
-    semanaAtiva = obterSemanas()[0];
-    atualizarGrafico();
+    atualizarTudo();
   });
 
 /* ===== LISTAS ===== */
-function obterSemanas() {
-  return [...new Set(dados.map(d => d["Semana"]).filter(Boolean))];
-}
-
 function obterLocais() {
   return [...new Set(dados.map(d => d["Local"]).filter(Boolean))];
 }
@@ -48,27 +41,6 @@ function obterTerminais() {
 }
 
 /* ===== BOTÕES ===== */
-function criarBotoesSemana() {
-  const div = document.getElementById("botoes-semana");
-  div.innerHTML = "";
-
-  obterSemanas().forEach((s, i) => {
-    const b = document.createElement("button");
-    b.textContent = s;
-    if (i === 0) b.classList.add("ativo");
-
-    b.onclick = () => {
-      semanaAtiva = s;
-      document.querySelectorAll("#botoes-semana button")
-        .forEach(x => x.classList.remove("ativo"));
-      b.classList.add("ativo");
-      atualizarGrafico();
-    };
-
-    div.appendChild(b);
-  });
-}
-
 function criarBotoesLocal() {
   const div = document.getElementById("botoes-lab");
   div.innerHTML = "";
@@ -78,10 +50,9 @@ function criarBotoesLocal() {
   todos.classList.add("ativo");
   todos.onclick = () => {
     localAtivo = null;
-    document.querySelectorAll("#botoes-lab button")
-      .forEach(x => x.classList.remove("ativo"));
+    document.querySelectorAll("#botoes-lab button").forEach(b => b.classList.remove("ativo"));
     todos.classList.add("ativo");
-    atualizarGrafico();
+    atualizarTudo();
   };
   div.appendChild(todos);
 
@@ -90,10 +61,9 @@ function criarBotoesLocal() {
     b.textContent = l;
     b.onclick = () => {
       localAtivo = l;
-      document.querySelectorAll("#botoes-lab button")
-        .forEach(x => x.classList.remove("ativo"));
+      document.querySelectorAll("#botoes-lab button").forEach(x => x.classList.remove("ativo"));
       b.classList.add("ativo");
-      atualizarGrafico();
+      atualizarTudo();
     };
     div.appendChild(b);
   });
@@ -108,10 +78,9 @@ function criarBotoesTerminais() {
   todos.classList.add("ativo");
   todos.onclick = () => {
     terminalAtivo = null;
-    document.querySelectorAll("#botoes-terminais button")
-      .forEach(x => x.classList.remove("ativo"));
+    document.querySelectorAll("#botoes-terminais button").forEach(b => b.classList.remove("ativo"));
     todos.classList.add("ativo");
-    atualizarGrafico();
+    atualizarTudo();
   };
   div.appendChild(todos);
 
@@ -120,13 +89,32 @@ function criarBotoesTerminais() {
     b.textContent = t;
     b.onclick = () => {
       terminalAtivo = t;
-      document.querySelectorAll("#botoes-terminais button")
-        .forEach(x => x.classList.remove("ativo"));
+      document.querySelectorAll("#botoes-terminais button").forEach(x => x.classList.remove("ativo"));
       b.classList.add("ativo");
-      atualizarGrafico();
+      atualizarTudo();
     };
     div.appendChild(b);
   });
+}
+
+/* ===== ATUALIZA TUDO ===== */
+function atualizarTudo() {
+  atualizarKPIs();
+  atualizarGrafico();
+  atualizarResumoSemanal();
+}
+
+/* ===== KPIs ===== */
+function atualizarKPIs() {
+  const dadosBase = dados
+    .filter(d => !localAtivo || d["Local"] === localAtivo)
+    .filter(d => !terminalAtivo || d["Terminais"] === terminalAtivo);
+
+  const total = dadosBase.reduce((s, d) => s + Number(d.Quantidade || 0), 0);
+
+  document.getElementById("kpi-selecionado").textContent = total.toLocaleString("pt-BR");
+  document.getElementById("kpi-mes").textContent =
+    dados.reduce((s, d) => s + Number(d.Quantidade || 0), 0).toLocaleString("pt-BR");
 }
 
 /* ===== GRÁFICO ===== */
@@ -135,19 +123,12 @@ function atualizarGrafico() {
   const valores = Array(31).fill(0);
 
   dados
-    .filter(d => d["Semana"] === semanaAtiva)
     .filter(d => !localAtivo || d["Local"] === localAtivo)
     .filter(d => !terminalAtivo || d["Terminais"] === terminalAtivo)
     .forEach(d => {
       const dia = extrairDia(d.Data);
       if (dia) valores[dia - 1] += Number(d.Quantidade || 0);
     });
-
-  document.getElementById("kpi-selecionado").textContent =
-    valores.reduce((a, b) => a + b, 0).toLocaleString("pt-BR");
-
-  document.getElementById("kpi-mes").textContent =
-    dados.reduce((s, d) => s + Number(d.Quantidade || 0), 0).toLocaleString("pt-BR");
 
   if (chart) chart.destroy();
 
@@ -161,57 +142,36 @@ function atualizarGrafico() {
         backgroundColor: "#38bdf8",
         barThickness: 12
       }]
-      atualizarResumoSemanal();
     },
     options: {
       animation: false,
       scales: {
         x: { ticks: { color: "#e5e7eb" } },
         y: { beginAtZero: true, ticks: { color: "#e5e7eb" } }
-      },
-      plugins: { legend: { labels: { color: "#e5e7eb" } } }
-    },
-    plugins: [{
-      id: "valoresTopo",
-      afterDatasetsDraw(chart) {
-        const { ctx } = chart;
-        ctx.save();
-        ctx.fillStyle = "#e5e7eb";
-        ctx.font = "11px Arial";
-        ctx.textAlign = "center";
-
-        chart.getDatasetMeta(0).data.forEach((bar, i) => {
-          const v = chart.data.datasets[0].data[i];
-          if (v > 0) ctx.fillText(v.toLocaleString("pt-BR"), bar.x, bar.y - 5);
-        });
-
-        ctx.restore();
       }
-    }]
+    }
   });
-  atualizarResumoSemanal();
 }
+
+/* ===== RESUMO SEMANAL ===== */
 function atualizarResumoSemanal() {
   const container = document.getElementById("resumo-semanal");
   container.innerHTML = "";
 
-  // Total do mês considerando filtros (menos semana)
-  const dadosFiltrados = dados
+  const dadosBase = dados
     .filter(d => !localAtivo || d["Local"] === localAtivo)
     .filter(d => !terminalAtivo || d["Terminais"] === terminalAtivo);
 
-  const totalMes = dadosFiltrados
-    .reduce((s, d) => s + Number(d.Quantidade || 0), 0);
+  const totalMes = dadosBase.reduce((s, d) => s + Number(d.Quantidade || 0), 0);
 
-  // Agrupar por Semana (coluna do Excel)
   const porSemana = {};
-  dadosFiltrados.forEach(d => {
+  dadosBase.forEach(d => {
     const sem = d["Semana"];
     if (!sem) return;
     porSemana[sem] = (porSemana[sem] || 0) + Number(d.Quantidade || 0);
   });
 
-  Object.keys(porSemana).forEach(sem => {
+  Object.keys(porSemana).sort().forEach(sem => {
     const total = porSemana[sem];
     const perc = totalMes > 0 ? Math.round((total / totalMes) * 100) : 0;
 
@@ -224,49 +184,4 @@ function atualizarResumoSemanal() {
     `;
     container.appendChild(div);
   });
-}
-function atualizarResumoSemanal() {
-  const container = document.getElementById("resumo-semanal");
-  if (!container) return;
-
-  container.innerHTML = "";
-
-  // Dados filtrados por Local e Terminais (sem filtrar semana)
-  const dadosBase = dados
-    .filter(d => !localAtivo || d["Local"] === localAtivo)
-    .filter(d => !terminalAtivo || d["Terminais"] === terminalAtivo);
-
-  // Total do mês
-  const totalMes = dadosBase.reduce(
-    (s, d) => s + Number(d.Quantidade || 0),
-    0
-  );
-
-  // Agrupar por Semana (coluna do Excel)
-  const porSemana = {};
-  dadosBase.forEach(d => {
-    const sem = d["Semana"];
-    if (!sem) return;
-    porSemana[sem] = (porSemana[sem] || 0) + Number(d.Quantidade || 0);
-  });
-
-  // Ordenar SEM 1, SEM 2, SEM 3...
-  Object.keys(porSemana)
-    .sort()
-    .forEach(sem => {
-      const total = porSemana[sem];
-      const perc = totalMes > 0
-        ? Math.round((total / totalMes) * 100)
-        : 0;
-
-      const div = document.createElement("div");
-      div.className = "sem-box";
-      div.innerHTML = `
-        <span class="sem">${sem}</span>
-        <span class="total">${total.toLocaleString("pt-BR")}</span>
-        <span class="percentual">${perc}%</span>
-      `;
-
-      container.appendChild(div);
-    });
 }

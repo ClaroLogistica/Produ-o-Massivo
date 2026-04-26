@@ -36,7 +36,7 @@ fetch("Dados.xlsx")
 
 /* ===== DADOS ÚNICOS ===== */
 function obterSemanas() {
-  return [...new Set(dados.map(d => d["semana "]).filter(Boolean))];
+  return [...new Set(dados.map(d => d["semana"]).filter(Boolean))];
 }
 
 function obterLocais() {

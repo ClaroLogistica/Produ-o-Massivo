@@ -36,15 +36,8 @@ fetch("Dados.xlsx")
 
 /* ===== DADOS ÚNICOS ===== */
 function obterSemanas() {
-  const possiveis = ["Semana", "SEMANA", "semana", "semana "];
-
-  let coluna = null;
-  for (const p of possiveis) {
-    if (dados.some(d => d[p])) {
-      coluna = p;
-      break;
-    }
-  }
+  return [...new Set(dados.map(d => d["Semana"]).filter(Boolean))];
+}
 
   if (!coluna) {
     console.warn("Coluna de Semana não encontrada no Excel");

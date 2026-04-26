@@ -188,6 +188,7 @@ function atualizarGrafico() {
       }
     }]
   });
+  atualizarResumoSemanal();
 }
 function atualizarResumoSemanal() {
   const container = document.getElementById("resumo-semanal");

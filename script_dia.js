@@ -224,3 +224,48 @@ function atualizarResumoSemanal() {
     container.appendChild(div);
   });
 }
+function atualizarResumoSemanal() {
+  const container = document.getElementById("resumo-semanal");
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  // Dados filtrados por Local e Terminais (sem filtrar semana)
+  const dadosBase = dados
+    .filter(d => !localAtivo || d["Local"] === localAtivo)
+    .filter(d => !terminalAtivo || d["Terminais"] === terminalAtivo);
+
+  // Total do mês
+  const totalMes = dadosBase.reduce(
+    (s, d) => s + Number(d.Quantidade || 0),
+    0
+  );
+
+  // Agrupar por Semana (coluna do Excel)
+  const porSemana = {};
+  dadosBase.forEach(d => {
+    const sem = d["Semana"];
+    if (!sem) return;
+    porSemana[sem] = (porSemana[sem] || 0) + Number(d.Quantidade || 0);
+  });
+
+  // Ordenar SEM 1, SEM 2, SEM 3...
+  Object.keys(porSemana)
+    .sort()
+    .forEach(sem => {
+      const total = porSemana[sem];
+      const perc = totalMes > 0
+        ? Math.round((total / totalMes) * 100)
+        : 0;
+
+      const div = document.createElement("div");
+      div.className = "sem-box";
+      div.innerHTML = `
+        <span class="sem">${sem}</span>
+        <span class="total">${total.toLocaleString("pt-BR")}</span>
+        <span class="percentual">${perc}%</span>
+      `;
+
+      container.appendChild(div);
+    });
+}

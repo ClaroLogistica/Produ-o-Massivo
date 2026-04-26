@@ -1,4 +1,3 @@
-let terminalAtivo = null;
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -17,58 +16,35 @@ let terminalAtivo = null;
 
 <body>
 
-  <h1>Dashboard Produção</h1>
+<h1>Dashboard Produção</h1>
 
-  <!-- FILTRO POR SEMANA -->
-  <h3>Semana</h3>
-  <div id="botoes-semana" class="painel-botoes"></div>
-
-  <!-- FILTRO POR LABORATÓRIO -->
-  
-function obterTerminais() {
-  return [...new Set(dados.map(d => d["Terminais"]).filter(Boolean))];
-}
-  <h3>Laboratório</h3>
-  <div id="botoes-lab" class="painel-botoes"></div>
-function criarBotoesTerminais() {
-  const div = document.getElementById("botoes-terminais");
-  div.innerHTML = "";
-
-  const todos = document.createElement("button");
-  todos.textContent = "Todos";
-  todos.classList.add("ativo");
-  todos.onclick = () => {
-    terminalAtivo = null;
-    document.querySelectorAll("#botoes-terminais button")
-      .forEach(b => b.classList.remove("ativo"));
-    todos.classList.add("ativo");
-    atualizarGrafico();
-  };
-  div.appendChild(todos);
-
-  obterTerminais().forEach(t => {
-    const btn = document.createElement("button");
-    btn.textContent = t;
-    btn.onclick = () => {
-      terminalAtivo = t;
-      document.querySelectorAll("#botoes-terminais button")
-        .forEach(b => b.classList.remove("ativo"));
-      btn.classList.add("ativo");
-      atualizarGrafico();
-    };
-    div.appendChild(btn);
-  });
-}
-  <!-- GRÁFICO -->
-  <div class="grafico-container">
-    <canvas id="graficoDiario"></canvas>
+<!-- KPIs -->
+<div class="kpi-container">
+  <div class="kpi">
+    <span id="kpi-selecionado">0</span>
+    <small>Total Selecionado</small>
   </div>
+  <div class="kpi">
+    <span id="kpi-mes">0</span>
+    <small>Total do Mês</small>
+  </div>
+</div>
+
+<h3>Semana</h3>
+<div id="botoes-semana" class="painel-botoes"></div>
+
+<h3>Local</h3>
+<div id="botoes-lab" class="painel-botoes"></div>
 
 <h3>Terminais</h3>
 <div id="botoes-terminais" class="painel-botoes"></div>
 
-  <!-- JS FINAL -->
-  <script src="script_dia.js"></script>
+<div class="grafico-container">
+  <canvas id="graficoDiario"></canvas>
+</div>
+
+<!-- JS -->
+<script src="script_dia.js"></script>
 
 </body>
 </html>

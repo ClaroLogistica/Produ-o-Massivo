@@ -8,7 +8,9 @@ body {
 h1 { margin-bottom: 10px; }
 h3 { margin-top: 25px; }
 
-.painel-botoes { margin: 10px 0 20px 0; }
+.painel-botoes {
+  margin: 10px 0 20px 0;
+}
 
 .painel-botoes button {
   background: #1e293b;

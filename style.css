@@ -12,7 +12,29 @@ h1 {
 .painel-botoes {
   margin-bottom: 20px;
 }
+.kpi-container {
+  display: flex;
+  gap: 20px;
+  margin: 20px 0;
+}
 
+.kpi {
+  background: #020617;
+  padding: 15px 25px;
+  border-radius: 10px;
+  min-width: 200px;
+}
+
+.kpi span {
+  font-size: 26px;
+  font-weight: bold;
+  color: #38bdf8;
+}
+
+.kpi small {
+  display: block;
+  color: #94a3b8;
+}
 .painel-botoes button {
   background: #1e293b;
   color: #e5e7eb;

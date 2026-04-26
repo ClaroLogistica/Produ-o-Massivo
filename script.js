@@ -7,6 +7,7 @@ fetch('Dados.xlsx')
     const wb = XLSX.read(b, { type: 'array' });
     const sh = wb.Sheets[wb.SheetNames[0]];
     dados = XLSX.utils.sheet_to_json(sh);
+
     criarFiltros();
     atualizar();
   });
@@ -30,8 +31,15 @@ function atualizar() {
     }
   });
 
-  const labels = f.map(d => d.Material);
-  const valores = f.map(d => Number(d.Quantidade) || 0);
+  // ✅ AGRUPAR PRODUÇÃO (somar Quantidade)
+  const agrupado = {};
+  f.forEach(d => {
+    const chave = d['Tipo'] || 'Sem Tipo';
+    agrupado[chave] = (agrupado[chave] || 0) + Number(d['Quantidade'] || 0);
+  });
+
+  const labels = Object.keys(agrupado);
+  const valores = Object.values(agrupado);
 
   if (chart) chart.destroy();
 
@@ -40,7 +48,7 @@ function atualizar() {
     data: {
       labels,
       datasets: [{
-        label: 'Quantidade',
+        label: 'Quantidade Produzida',
         data: valores,
         backgroundColor: '#0078D4'
       }]
@@ -48,9 +56,7 @@ function atualizar() {
     options: {
       responsive: true,
       scales: {
-        y: {
-          beginAtZero: true
-        }
+        y: { beginAtZero: true }
       }
     }
   });

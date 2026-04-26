@@ -1,8 +1,10 @@
 let dados = [];
 let chart = null;
+
 let localAtivo = null;
 let terminalAtivo = null;
 
+/* ===== UTIL ===== */
 function extrairDia(data) {
   if (data instanceof Date) return data.getDate();
   if (typeof data === "number") {
@@ -13,6 +15,7 @@ function extrairDia(data) {
   return isNaN(d) ? null : d.getDate();
 }
 
+/* ===== CARREGAR EXCEL ===== */
 fetch("Dados.xlsx")
   .then(r => r.arrayBuffer())
   .then(b => {
@@ -25,6 +28,7 @@ fetch("Dados.xlsx")
     atualizarTudo();
   });
 
+/* ===== LISTAS ===== */
 function obterLocais() {
   return [...new Set(dados.map(d => d["Local"]).filter(Boolean))];
 }
@@ -33,21 +37,15 @@ function obterTerminais() {
   return [...new Set(dados.map(d => d["Terminais"]).filter(Boolean))];
 }
 
+/* ===== BOTÕES ===== */
 function criarBotoesLocal() {
   const div = document.getElementById("botoes-lab");
   div.innerHTML = "";
 
-  const todos = document.createElement("button");
-  todos.textContent = "Todos";
-  todos.classList.add("ativo");
-  todos.onclick = () => { localAtivo = null; atualizarTudo(); };
-  div.appendChild(todos);
+  criarBotao(div, "Todos", () => { localAtivo = null; atualizarTudo(); }, true);
 
   obterLocais().forEach(l => {
-    const b = document.createElement("button");
-    b.textContent = l;
-    b.onclick = () => { localAtivo = l; atualizarTudo(); };
-    div.appendChild(b);
+    criarBotao(div, l, () => { localAtivo = l; atualizarTudo(); });
   });
 }
 
@@ -55,26 +53,35 @@ function criarBotoesTerminais() {
   const div = document.getElementById("botoes-terminais");
   div.innerHTML = "";
 
-  const todos = document.createElement("button");
-  todos.textContent = "Todos";
-  todos.classList.add("ativo");
-  todos.onclick = () => { terminalAtivo = null; atualizarTudo(); };
-  div.appendChild(todos);
+  criarBotao(div, "Todos", () => { terminalAtivo = null; atualizarTudo(); }, true);
 
   obterTerminais().forEach(t => {
-    const b = document.createElement("button");
-    b.textContent = t;
-    b.onclick = () => { terminalAtivo = t; atualizarTudo(); };
-    div.appendChild(b);
+    criarBotao(div, t, () => { terminalAtivo = t; atualizarTudo(); });
   });
 }
 
+function criarBotao(container, texto, acao, ativo = false) {
+  const b = document.createElement("button");
+  b.textContent = texto;
+  if (ativo) b.classList.add("ativo");
+
+  b.onclick = () => {
+    container.querySelectorAll("button").forEach(x => x.classList.remove("ativo"));
+    b.classList.add("ativo");
+    acao();
+  };
+
+  container.appendChild(b);
+}
+
+/* ===== ATUALIZA TUDO ===== */
 function atualizarTudo() {
   atualizarKPIs();
   atualizarGrafico();
   atualizarResumoSemanal();
 }
 
+/* ===== KPIs ===== */
 function atualizarKPIs() {
   const base = dados
     .filter(d => !localAtivo || d["Local"] === localAtivo)
@@ -87,6 +94,7 @@ function atualizarKPIs() {
   document.getElementById("kpi-mes").textContent = totalMes.toLocaleString("pt-BR");
 }
 
+/* ===== GRÁFICO ===== */
 function atualizarGrafico() {
   const labels = Array.from({ length: 31 }, (_, i) => i + 1);
   const valores = Array(31).fill(0);
@@ -100,12 +108,42 @@ function atualizarGrafico() {
     });
 
   if (chart) chart.destroy();
+
   chart = new Chart(document.getElementById("graficoDiario"), {
     type: "bar",
-    data: { labels, datasets: [{ data: valores, backgroundColor: "#38bdf8" }] }
+    data: {
+      labels,
+      datasets: [{
+        label: "Produção por Dia",
+        data: valores,
+        backgroundColor: "#38bdf8"
+      }]
+    },
+    options: {
+      animation: false,
+      plugins: {
+        legend: { display: false }
+      }
+    },
+    plugins: [{
+      id: "labels",
+      afterDatasetsDraw(chart) {
+        const { ctx } = chart;
+        ctx.save();
+        ctx.fillStyle = "#e5e7eb";
+        ctx.font = "11px Arial";
+        ctx.textAlign = "center";
+        chart.getDatasetMeta(0).data.forEach((bar, i) => {
+          const v = valores[i];
+          if (v > 0) ctx.fillText(v.toLocaleString("pt-BR"), bar.x, bar.y - 5);
+        });
+        ctx.restore();
+      }
+    }]
   });
 }
 
+/* ===== RESUMO SEMANAL ===== */
 function atualizarResumoSemanal() {
   const c = document.getElementById("resumo-semanal");
   c.innerHTML = "";
@@ -126,6 +164,7 @@ function atualizarResumoSemanal() {
   Object.keys(porSemana).sort().forEach(s => {
     const total = porSemana[s];
     const p = totalMes ? Math.round((total / totalMes) * 100) : 0;
+
     const div = document.createElement("div");
     div.className = "sem-box";
     div.innerHTML = `<span>${s}</span><span>${total.toLocaleString("pt-BR")}</span><span class="percentual">${p}%</span>`;

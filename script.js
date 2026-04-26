@@ -83,43 +83,53 @@ function atualizarGrafico() {
   if (chart) chart.destroy();
 
   chart = new Chart(document.getElementById("graficoDiario"), {
-    type: "bar",
-    data: {
-      labels,
-      datasets: [{
-        label: "Produção por Dia",
-        data: valores,
-        backgroundColor: "#38bdf8"
-      }]
-    },
-    options: {
-      responsive: true,
-      animation: false,
-      scales: {
-        x: {
-          type: "category",
-          ticks: { color: "#e5e7eb" },
-          title: {
-            display: true,
-            text: "Dia do Mês",
-            color: "#e5e7eb"
-          }
-        },
-        y: {
-          beginAtZero: true,
-          ticks: { color: "#e5e7eb" },
-          title: {
-            display: true,
-            text: "Quantidade Produzida",
-            color: "#e5e7eb"
-          }
-        }
+  type: "bar",
+  data: {
+    labels,
+    datasets: [{
+      label: "Produção por Dia",
+      data: valores,
+      backgroundColor: "#38bdf8",
+      barThickness: 12
+    }]
+  },
+  options: {
+    responsive: true,
+    animation: false,
+    scales: {
+      x: {
+        ticks: { color: "#e5e7eb" }
       },
-      plugins: {
-        legend: {
-          labels: { color: "#e5e7eb" }
-        }
+      y: {
+        beginAtZero: true,
+        ticks: { color: "#e5e7eb" }
       }
+    },
+    plugins: {
+      legend: { labels: { color: "#e5e7eb" } },
+      tooltip: { enabled: true }
     }
-  });
-}
+  },
+  plugins: [{
+    id: "valoresTopo",
+    afterDatasetsDraw(chart) {
+      const { ctx } = chart;
+      ctx.save();
+      ctx.fillStyle = "#e5e7eb";
+      ctx.font = "11px Arial";
+      ctx.textAlign = "center";
+
+      chart.data.datasets[0].data.forEach((valor, i) => {
+        if (valor > 0) {
+          const meta = chart.getDatasetMeta(0).data[i];
+          ctx.fillText(
+            valor.toLocaleString("pt-BR"),
+            meta.x,
+            meta.y - 5
+          );
+        }
+      });
+      ctx.restore();
+    }
+  }]
+});

@@ -2,10 +2,10 @@ let dados = [];
 let chart = null;
 
 let semanaAtiva = null;
-let laboratorioAtivo = null;
+let localAtivo = null;
 let terminalAtivo = null;
 
-/* ===== EXTRAI DIA ===== */
+/* ===== UTIL ===== */
 function extrairDia(data) {
   if (data instanceof Date) return data.getDate();
 
@@ -18,7 +18,7 @@ function extrairDia(data) {
   return isNaN(d) ? null : d.getDate();
 }
 
-/* ===== CARREGA EXCEL ===== */
+/* ===== CARREGAR EXCEL ===== */
 fetch("Dados.xlsx")
   .then(r => r.arrayBuffer())
   .then(b => {
@@ -34,20 +34,9 @@ fetch("Dados.xlsx")
     atualizarGrafico();
   });
 
-/* ===== DADOS ÚNICOS ===== */
+/* ===== OBTENÇÕES ===== */
 function obterSemanas() {
   return [...new Set(dados.map(d => d["Semana"]).filter(Boolean))];
-}
-
-  if (!coluna) {
-    console.warn("Coluna de Semana não encontrada no Excel");
-    return [];
-  }
-
-  // guarda o nome correto para uso no filtro
-  window.COLUNA_SEMANA = coluna;
-
-  return [...new Set(dados.map(d => d[coluna]).filter(Boolean))];
 }
 
 function obterLocais() {
@@ -88,7 +77,7 @@ function criarBotoesLocal() {
   todos.textContent = "Todos";
   todos.classList.add("ativo");
   todos.onclick = () => {
-    laboratorioAtivo = null;
+    localAtivo = null;
     document.querySelectorAll("#botoes-lab button")
       .forEach(x => x.classList.remove("ativo"));
     todos.classList.add("ativo");
@@ -100,7 +89,7 @@ function criarBotoesLocal() {
     const b = document.createElement("button");
     b.textContent = l;
     b.onclick = () => {
-      laboratorioAtivo = l;
+      localAtivo = l;
       document.querySelectorAll("#botoes-lab button")
         .forEach(x => x.classList.remove("ativo"));
       b.classList.add("ativo");
@@ -147,7 +136,7 @@ function atualizarGrafico() {
 
   dados
     .filter(d => d["Semana"] === semanaAtiva)
-    .filter(d => !laboratorioAtivo || d["Local"] === laboratorioAtivo)
+    .filter(d => !localAtivo || d["Local"] === localAtivo)
     .filter(d => !terminalAtivo || d["Terminais"] === terminalAtivo)
     .forEach(d => {
       const dia = extrairDia(d.Data);

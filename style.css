@@ -33,7 +33,9 @@ h3 { margin-top: 25px; }
   padding: 20px;
   border-radius: 14px;
   margin-top: 20px;
-  height: 420px;     /* ALTURA CONTROLADA */
+  height: 360px;      /* <-- ALTURA CONTROLADA */
+}
+``
 }
 }
 
@@ -88,4 +90,8 @@ h3 { margin-top: 25px; }
 
 #graficoDiario {
   max-height: 360px;
+}
+
+#graficoDiario {
+  max-height: 300px;   /* <-- 20% menor que antes */
 }

@@ -125,7 +125,7 @@ function atualizarGrafico() {
   const labels = Array.from({ length: 31 }, (_, i) => i + 1);
   const valores = Array(31).fill(0);
 
-  // Dados filtrados (respeita Local e Terminais)
+  // Dados filtrados
   const dadosFiltrados = dados
     .filter(d => !localAtivo || d["Local"] === localAtivo)
     .filter(d => !terminalAtivo || d["Terminais"] === terminalAtivo);
@@ -135,7 +135,7 @@ function atualizarGrafico() {
     if (dia) valores[dia - 1] += Number(d.Quantidade || 0);
   });
 
-  // --- Descobrir intervalos de semanas a partir do Excel ---
+  // Intervalos de semanas baseados no Excel
   const intervalosSemanas = {};
   dadosFiltrados.forEach(d => {
     let semanaValor = null;
@@ -154,10 +154,8 @@ function atualizarGrafico() {
     if (!intervalosSemanas[semanaValor]) {
       intervalosSemanas[semanaValor] = { inicio: dia, fim: dia };
     } else {
-      intervalosSemanas[semanaValor].inicio =
-        Math.min(intervalosSemanas[semanaValor].inicio, dia);
-      intervalosSemanas[semanaValor].fim =
-        Math.max(intervalosSemanas[semanaValor].fim, dia);
+      intervalosSemanas[semanaValor].inicio = Math.min(intervalosSemanas[semanaValor].inicio, dia);
+      intervalosSemanas[semanaValor].fim = Math.max(intervalosSemanas[semanaValor].fim, dia);
     }
   });
 
@@ -169,24 +167,23 @@ function atualizarGrafico() {
     type: "bar",
     data: {
       labels,
-      datasets: [{
-        data: valores,
-        backgroundColor: "rgba(0,0,0,0)", // transparente (desenhamos manualmente)
-        borderRadius: 6
-      }]
+      datasets: [
+        {
+          data: valores,
+          backgroundColor: "rgba(0,0,0,0)",
+          borderRadius: 6
+        }
+      ]
     },
     options: {
       responsive: true,
       animation: false,
-
-      // Espaço para rótulos e texto das semanas
       layout: {
         padding: {
           top: 32,
-          bottom: 34
+          bottom: 40
         }
       },
-
       plugins: {
         legend: { display: false }
       },
@@ -202,7 +199,7 @@ function atualizarGrafico() {
     },
     plugins: [
 
-      /* ✅ Degradê real por coluna */
+      /* ✅ Degradê AZUL → PRETO por coluna */
       {
         id: "gradientePorBarra",
         beforeDatasetsDraw(chart) {
@@ -217,8 +214,8 @@ function atualizarGrafico() {
               bar.y
             );
 
-            gradient.addColorStop(0, "rgba(56, 189, 248, 0.15)");
-            gradient.addColorStop(1, "rgba(56, 189, 248, 1)");
+            gradient.addColorStop(0, "rgba(2, 6, 23, 1)");   // preto (fundo)
+            gradient.addColorStop(1, "rgba(56, 189, 248, 1)"); // azul topo
 
             ctx.save();
             ctx.fillStyle = gradient;
@@ -265,7 +262,6 @@ function atualizarGrafico() {
         afterDraw(chart) {
           const { ctx, scales, chartArea } = chart;
           const xScale = scales.x;
-          if (!xScale) return;
 
           ctx.save();
           ctx.strokeStyle = "rgba(255,255,255,0.35)";
@@ -275,21 +271,24 @@ function atualizarGrafico() {
           ctx.font = "12px Arial";
 
           Object.entries(intervalosSemanas).forEach(([semana, intervalo]) => {
-            const xInicio = xScale.getPixelForValue(intervalo.inicio);
-            const xFim = xScale.getPixelForValue(intervalo.fim);
+            const idxInicio = intervalo.inicio - 1;
+            const idxFim = intervalo.fim - 1;
+
+            const xInicio = xScale.getPixelForTick(idxInicio);
+            const xFim = xScale.getPixelForTick(idxFim);
             const xCentro = (xInicio + xFim) / 2;
 
-            // Linha vertical indicando início da semana
+            // linha vertical
             ctx.beginPath();
             ctx.moveTo(xInicio, chartArea.top);
             ctx.lineTo(xInicio, chartArea.bottom);
             ctx.stroke();
 
-            // Texto "Sem X" centralizado
+            // texto da semana
             ctx.fillText(
               semana,
               xCentro,
-              chartArea.bottom + 20
+              chartArea.bottom + 22
             );
           });
 

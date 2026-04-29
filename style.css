@@ -103,3 +103,18 @@ h3 { margin-top: 25px; }
   font-size: 12px;
   text-align: center;
 }
+.grafico-container {
+  margin-top: 20px;
+}
+
+#faixa-semanas {
+  display: grid;
+  grid-template-columns: repeat(31, 1fr);
+  margin-top: 6px;
+  padding-top: 6px;
+  color: #cbd5e1;
+  font-size: 12px;
+  text-align: center;
+  border-top: 1px solid rgba(255,255,255,0.15);
+}
+``

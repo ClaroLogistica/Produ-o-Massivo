@@ -95,3 +95,11 @@ h3 { margin-top: 25px; }
 #graficoDiario {
   max-height: 300px;   /* <-- 20% menor que antes */
 }
+#faixa-semanas {
+  display: grid;
+  grid-template-columns: repeat(31, 1fr);
+  margin-top: 8px;
+  color: #cbd5e1;
+  font-size: 12px;
+  text-align: center;
+}

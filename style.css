@@ -104,3 +104,47 @@ h3 { margin-top: 25px; }
   text-align: center;
   border-top: 1px solid rgba(255,255,255,0.15);
 }
+.filtro-select {
+  background: #020617;
+  color: #e5e7eb;
+  border: 1px solid #334155;
+  padding: 8px 12px;
+  border-radius: 8px;
+  min-width: 260px;
+}
+
+.multiselect {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 16px;
+}
+
+.multiselect button {
+  background: #020617;
+  color: #e5e7eb;
+  border: 1px solid #334155;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  min-width: 260px;
+  text-align: left;
+}
+
+.multiselect-opcoes {
+  display: none;
+  position: absolute;
+  background: #020617;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 10px;
+  margin-top: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 50;
+}
+
+.multiselect-opcoes label {
+  display: block;
+  margin-bottom: 6px;
+  cursor: pointer;
+}

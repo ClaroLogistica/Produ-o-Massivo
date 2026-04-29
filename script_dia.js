@@ -4,9 +4,12 @@
 let dados = [];
 let chart = null;
 
-let localSelecionado = null;
-let terminaisSelecionados = [];
-let acessoriosSelecionados = [];
+/* Filtros principais */
+let filtroTipo = null;                 // "Terminais" ou "Acessórios"
+let filtroGiro = [];                   // ["Alto Giro", "Baixo Giro"]
+let filtroDep = [];                    // ["UDEI", "USAD"]
+let filtroTecnologias = [];            // tecnologias selecionadas
+let filtroLocais = [];                 // locais selecionados
 
 /*************************************************
  * FUNÇÕES UTILITÁRIAS
@@ -33,114 +36,133 @@ fetch("Dados.xlsx")
     const sh = wb.Sheets[wb.SheetNames[0]];
     dados = XLSX.utils.sheet_to_json(sh);
 
-    criarSelectLocal();
-    criarMultiselectTerminais();
-    criarMultiselectAcessorios();
+    criarFiltroLocal();
+    configurarModal();
 
     atualizarTudo();
   });
 
 /*************************************************
- * FILTROS — LOCAL
+ * FILTRO DE LOCAL (FORA DO MODAL)
  *************************************************/
-function criarSelectLocal() {
+function criarFiltroLocal() {
   const select = document.getElementById("select-local");
   select.innerHTML = "";
 
-  select.appendChild(new Option("Todos", ""));
+  const locais = [...new Set(dados.map(d => d.Local).filter(v => v))];
 
-  [...new Set(dados.map(d => d["Local"]).filter(Boolean))]
-    .forEach(l => select.appendChild(new Option(l, l)));
+  locais.forEach(l => {
+    const opt = document.createElement("option");
+    opt.value = l;
+    opt.textContent = l;
+    select.appendChild(opt);
+  });
 
   select.onchange = () => {
-    localSelecionado = select.value || null;
+    filtroLocais = [...select.selectedOptions].map(o => o.value);
     atualizarTudo();
   };
 }
 
 /*************************************************
- * FILTROS — TERMINAIS (SEM ACESSÓRIOS)
+ * MODAL DE FILTROS
  *************************************************/
+function configurarModal() {
+  const modal = document.getElementById("modal-filtros");
+  const btnAbrir = document.getElementById("btn-filtros");
+  const btnAplicar = document.getElementById("btn-aplicar");
+  const btnLimpar = document.getElementById("btn-limpar");
 
-function obterTerminaisValidos() {
-  return [...new Set(
-    dados
-      .filter(d => !d["Acessórios"] || d["Acessórios"].toString().trim() === "")
-      .map(d => d["Terminais"])
-      .filter(v => v && v.toString().trim() !== "")
-  )];
+  btnAbrir.onclick = () => modal.style.display = "block";
+
+  window.onclick = e => {
+    if (e.target === modal) modal.style.display = "none";
+  };
+
+  /* Tipo (Terminais / Acessórios) */
+  document.querySelectorAll("input[name='tipo']").forEach(radio => {
+    radio.onchange = () => {
+      filtroTipo = radio.value;
+      montarTecnologias();
+    };
+  });
+
+  /* Aplicar filtros */
+  btnAplicar.onclick = () => {
+    filtroGiro = [...document.querySelectorAll(".chk-giro:checked")]
+      .map(c => c.value);
+
+    filtroDep = [...document.querySelectorAll(".chk-dep:checked")]
+      .map(c => c.value);
+
+    modal.style.display = "none";
+    atualizarTudo();
+  };
+
+  /* Limpar filtros */
+  btnLimpar.onclick = () => {
+    filtroTipo = null;
+    filtroGiro = [];
+    filtroDep = [];
+    filtroTecnologias = [];
+
+    document.querySelectorAll("#modal-filtros input").forEach(i => i.checked = false);
+    document.getElementById("lista-tecnologia").innerHTML = "";
+
+    atualizarTudo();
+  };
 }
 
+/*************************************************
+ * TECNOLOGIAS (DINÂMICAS)
+ *************************************************/
+function montarTecnologias() {
+  const div = document.getElementById("lista-tecnologia");
+  div.innerHTML = "";
+  filtroTecnologias = [];
 
-function criarMultiselectTerminais() {
-  const lista = document.getElementById("lista-terminais");
-  const btn = document.getElementById("btn-terminais");
-  lista.innerHTML = "";
+  if (!filtroTipo) return;
 
-  obterTerminaisValidos().forEach(t => {
+  const valores = [...new Set(
+    dados
+      .map(d => d[filtroTipo])
+      .filter(v => v && v.toString().trim() !== "")
+  )];
+
+  valores.forEach(t => {
     const label = document.createElement("label");
     const chk = document.createElement("input");
     chk.type = "checkbox";
     chk.value = t;
 
     chk.onchange = () => {
-      terminaisSelecionados =
-        [...lista.querySelectorAll("input:checked")].map(c => c.value);
-      atualizarTudo();
+      filtroTecnologias = [...div.querySelectorAll("input:checked")]
+        .map(c => c.value);
     };
 
     label.appendChild(chk);
     label.append(" " + t);
-    lista.appendChild(label);
+    div.appendChild(label);
   });
-
-  btn.onclick = () => {
-    lista.style.display =
-      lista.style.display === "block" ? "none" : "block";
-  };
 }
 
 /*************************************************
- * FILTROS — ACESSÓRIOS (SEM TERMINAIS)
+ * FILTRO CENTRAL (USADO EM TUDO)
  *************************************************/
-function obterAcessoriosValidos() {
-  return [...new Set(
-    dados
-      .filter(d => !d["Terminais"] || d["Terminais"].toString().trim() === "")
-      .map(d => d["Acessórios"])
-      .filter(v => v && v.toString().trim() !== "")
-  )];
-}
-function criarMultiselectAcessorios() {
-  const lista = document.getElementById("lista-acessorios");
-  const btn = document.getElementById("btn-acessorios");
-  lista.innerHTML = "";
-
-  obterAcessoriosValidos().forEach(a => {
-    const label = document.createElement("label");
-    const chk = document.createElement("input");
-    chk.type = "checkbox";
-    chk.value = a;
-
-    chk.onchange = () => {
-      acessoriosSelecionados =
-        [...lista.querySelectorAll("input:checked")].map(c => c.value);
-      atualizarTudo();
-    };
-
-    label.appendChild(chk);
-    label.append(" " + a);
-    lista.appendChild(label);
-  });
-
-  btn.onclick = () => {
-    lista.style.display =
-      lista.style.display === "block" ? "none" : "block";
-  };
+function aplicarFiltros() {
+  return dados
+    .filter(d => filtroLocais.length === 0 || filtroLocais.includes(d.Local))
+    .filter(d => !filtroTipo || d[filtroTipo])
+    .filter(d => filtroGiro.length === 0 || filtroGiro.includes(d.Giro))
+    .filter(d => filtroDep.length === 0 || filtroDep.includes(d["Dep."]))
+    .filter(d =>
+      filtroTecnologias.length === 0 ||
+      filtroTecnologias.includes(d[filtroTipo])
+    );
 }
 
 /*************************************************
- * FUNÇÃO CENTRAL DE ATUALIZAÇÃO
+ * ATUALIZAÇÃO GERAL
  *************************************************/
 function atualizarTudo() {
   atualizarKPIs();
@@ -151,33 +173,22 @@ function atualizarTudo() {
 /*************************************************
  * KPIs
  *************************************************/
-function aplicarFiltros() {
-  return dados
-    .filter(d => !localSelecionado || d["Local"] === localSelecionado)
-    .filter(d =>
-      terminaisSelecionados.length === 0 ||
-      terminaisSelecionados.includes(d["Terminais"])
-    )
-    .filter(d =>
-      acessoriosSelecionados.length === 0 ||
-      acessoriosSelecionados.includes(d["Acessórios"])
-    );
-}
-
 function atualizarKPIs() {
   const base = aplicarFiltros();
 
-  const totalSelecionado =
-    base.reduce((s, d) => s + Number(d.Quantidade || 0), 0);
+  const totalSelecionado = base.reduce(
+    (s, d) => s + Number(d.Quantidade || 0), 0
+  );
 
-  const totalMes =
-    dados.reduce((s, d) => s + Number(d.Quantidade || 0), 0);
+  const totalMes = dados.reduce(
+    (s, d) => s + Number(d.Quantidade || 0), 0
+  );
 
-  document.getElementById("kpi-selecionado")
-    .textContent = totalSelecionado.toLocaleString("pt-BR");
+  document.getElementById("kpi-selecionado").textContent =
+    totalSelecionado.toLocaleString("pt-BR");
 
-  document.getElementById("kpi-mes")
-    .textContent = totalMes.toLocaleString("pt-BR");
+  document.getElementById("kpi-mes").textContent =
+    totalMes.toLocaleString("pt-BR");
 }
 
 /*************************************************
@@ -187,9 +198,9 @@ function atualizarGrafico() {
   const labels = Array.from({ length: 31 }, (_, i) => i + 1);
   const valores = Array(31).fill(0);
 
-  const dadosFiltrados = aplicarFiltros();
+  const base = aplicarFiltros();
 
-  dadosFiltrados.forEach(d => {
+  base.forEach(d => {
     const dia = extrairDia(d.Data);
     if (dia) valores[dia - 1] += Number(d.Quantidade || 0);
   });
@@ -218,84 +229,59 @@ function atualizarGrafico() {
         y: { display: false }
       }
     },
-    plugins: [
-      {
-        id: "gradienteAzulPreto",
-        beforeDatasetsDraw(chart) {
-          const { ctx } = chart;
-          chart.getDatasetMeta(0).data.forEach(bar => {
-            const g = ctx.createLinearGradient(0, bar.base, 0, bar.y);
-            g.addColorStop(0, "#020617");
-            g.addColorStop(1, "#38bdf8");
+    plugins: [{
+      id: "gradienteAzulPreto",
+      beforeDatasetsDraw(chart) {
+        const ctx = chart.ctx;
+        chart.getDatasetMeta(0).data.forEach(bar => {
+          const g = ctx.createLinearGradient(0, bar.base, 0, bar.y);
+          g.addColorStop(0, "#020617");
+          g.addColorStop(1, "#38bdf8");
 
-            ctx.fillStyle = g;
-            ctx.fillRect(
-              bar.x - bar.width / 2,
-              bar.y,
-              bar.width,
-              bar.base - bar.y
-            );
-          });
-        }
-      },
-      {
-        id: "valoresTopo",
-        afterDatasetsDraw(chart) {
-          const { ctx } = chart;
-          ctx.fillStyle = "#e5e7eb";
-          ctx.font = "11px Arial";
-          ctx.textAlign = "center";
-
-          chart.getDatasetMeta(0).data.forEach((bar, i) => {
-            if (valores[i] > 0) {
-              ctx.fillText(
-                valores[i].toLocaleString("pt-BR"),
-                bar.x,
-                bar.y - 6
-              );
-            }
-          });
-        }
+          ctx.fillStyle = g;
+          ctx.fillRect(
+            bar.x - bar.width / 2,
+            bar.y,
+            bar.width,
+            bar.base - bar.y
+          );
+        });
       }
-    ]
+    }]
   });
 
-  atualizarFaixaSemanas(dadosFiltrados);
+  atualizarFaixaSemanas(base);
 }
 
 /*************************************************
- * FAIXA DE SEMANAS (ABAIXO DO GRÁFICO)
+ * FAIXA DE SEMANAS
  *************************************************/
-function atualizarFaixaSemanas(dadosFiltrados) {
+function atualizarFaixaSemanas(base) {
   const div = document.getElementById("faixa-semanas");
   if (!div) return;
   div.innerHTML = "";
 
   const semanas = {};
 
-  dadosFiltrados.forEach(d => {
+  base.forEach(d => {
     const dia = extrairDia(d.Data);
     if (!dia) return;
 
     let semana = null;
     Object.keys(d).forEach(k => {
-      if (k.toLowerCase().includes("semana")) {
-        semana = d[k];
-      }
+      if (k.toLowerCase().includes("semana")) semana = d[k];
     });
-
     if (!semana) return;
 
     if (!semanas[semana]) semanas[semana] = [];
     semanas[semana].push(dia);
   });
 
-  Object.entries(semanas).forEach(([semana, dias]) => {
-    const span = document.createElement("div");
-    span.style.gridColumn =
-      `${Math.min(...dias)} / ${Math.max(...dias) + 1}`;
-    span.textContent = semana;
-    div.appendChild(span);
+  Object.entries(semanas).forEach(([sem, dias]) => {
+    const s = document.createElement("div");
+    s.style.gridColumn = `${Math.min(...dias)} / ${Math.max(...dias) + 1}`;
+    s.textContent = sem;
+    div.appendChild(s);
   });
 }
 
@@ -307,29 +293,26 @@ function atualizarResumoSemanal() {
   container.innerHTML = "";
 
   const base = aplicarFiltros();
-
-  const totalMes =
-    base.reduce((s, d) => s + Number(d.Quantidade || 0), 0);
+  const totalMes = base.reduce(
+    (s, d) => s + Number(d.Quantidade || 0), 0
+  );
 
   const porSemana = {};
 
   base.forEach(d => {
-    let semanaValor = null;
+    let semana = null;
     Object.keys(d).forEach(k => {
-      if (k.toLowerCase().includes("semana")) {
-        semanaValor = d[k];
-      }
+      if (k.toLowerCase().includes("semana")) semana = d[k];
     });
-    if (!semanaValor) return;
+    if (!semana) return;
 
-    porSemana[semanaValor] =
-      (porSemana[semanaValor] || 0) + Number(d.Quantidade || 0);
+    porSemana[semana] =
+      (porSemana[semana] || 0) + Number(d.Quantidade || 0);
   });
 
   Object.keys(porSemana).sort().forEach(sem => {
     const total = porSemana[sem];
-    const perc =
-      totalMes > 0 ? Math.round((total / totalMes) * 100) : 0;
+    const perc = totalMes > 0 ? Math.round((total / totalMes) * 100) : 0;
 
     const div = document.createElement("div");
     div.className = "sem-box";

@@ -93,24 +93,77 @@ function atualizarKPIs() {
   document.getElementById("kpi-selecionado").textContent = totalSelecionado.toLocaleString("pt-BR");
   document.getElementById("kpi-mes").textContent = totalMes.toLocaleString("pt-BR");
 }
+function obterIntervalosSemanas(dadosFiltrados) {
+  const semanas = {};
 
+  dadosFiltrados.forEach(d => {
+    let semanaValor = null;
+
+    Object.keys(d).forEach(k => {
+      if (k.toLowerCase().includes("semana")) {
+        semanaValor = d[k];
+      }
+    });
+
+    if (!semanaValor) return;
+
+    const dia = extrairDia(d.Data);
+    if (!dia) return;
+
+    if (!semanas[semanaValor]) {
+      semanas[semanaValor] = { inicio: dia, fim: dia };
+    } else {
+      semanas[semanaValor].inicio = Math.min(semanas[semanaValor].inicio, dia);
+      semanas[semanaValor].fim = Math.max(semanas[semanaValor].fim, dia);
+    }
+  });
+
+  return semanas;
+}
 /* ===== GRÁFICO ===== */
 function atualizarGrafico() {
   const labels = Array.from({ length: 31 }, (_, i) => i + 1);
   const valores = Array(31).fill(0);
 
-  dados
+  // Dados filtrados (respeita Local e Terminais)
+  const dadosFiltrados = dados
     .filter(d => !localAtivo || d["Local"] === localAtivo)
-    .filter(d => !terminalAtivo || d["Terminais"] === terminalAtivo)
-    .forEach(d => {
-      const dia = extrairDia(d.Data);
-      if (dia) valores[dia - 1] += Number(d.Quantidade || 0);
+    .filter(d => !terminalAtivo || d["Terminais"] === terminalAtivo);
+
+  dadosFiltrados.forEach(d => {
+    const dia = extrairDia(d.Data);
+    if (dia) valores[dia - 1] += Number(d.Quantidade || 0);
+  });
+
+  // --- Descobrir intervalos de semanas a partir do Excel ---
+  const intervalosSemanas = {};
+  dadosFiltrados.forEach(d => {
+    let semanaValor = null;
+
+    Object.keys(d).forEach(k => {
+      if (k.toLowerCase().includes("semana")) {
+        semanaValor = d[k];
+      }
     });
+
+    if (!semanaValor) return;
+
+    const dia = extrairDia(d.Data);
+    if (!dia) return;
+
+    if (!intervalosSemanas[semanaValor]) {
+      intervalosSemanas[semanaValor] = { inicio: dia, fim: dia };
+    } else {
+      intervalosSemanas[semanaValor].inicio =
+        Math.min(intervalosSemanas[semanaValor].inicio, dia);
+      intervalosSemanas[semanaValor].fim =
+        Math.max(intervalosSemanas[semanaValor].fim, dia);
+    }
+  });
 
   if (chart) chart.destroy();
 
   const canvas = document.getElementById("graficoDiario");
-  const ctx = canvas.getContext("2d");
 
   chart = new Chart(canvas, {
     type: "bar",
@@ -118,16 +171,22 @@ function atualizarGrafico() {
       labels,
       datasets: [{
         data: valores,
-        backgroundColor: "#00000000", // transparente (vamos desenhar manualmente)
+        backgroundColor: "rgba(0,0,0,0)", // transparente (desenhamos manualmente)
         borderRadius: 6
       }]
     },
     options: {
       responsive: true,
       animation: false,
+
+      // Espaço para rótulos e texto das semanas
       layout: {
-        padding: { top: 34 } // ✅ evita cortar o valor da barra mais alta
+        padding: {
+          top: 32,
+          bottom: 34
+        }
       },
+
       plugins: {
         legend: { display: false }
       },
@@ -143,7 +202,7 @@ function atualizarGrafico() {
     },
     plugins: [
 
-      /* ✅ DESENHA DEGRADÊ POR COLUNA */
+      /* ✅ Degradê real por coluna */
       {
         id: "gradientePorBarra",
         beforeDatasetsDraw(chart) {
@@ -158,7 +217,7 @@ function atualizarGrafico() {
               bar.y
             );
 
-            gradient.addColorStop(0, "rgba(56, 189, 248, 0.08)");
+            gradient.addColorStop(0, "rgba(56, 189, 248, 0.15)");
             gradient.addColorStop(1, "rgba(56, 189, 248, 1)");
 
             ctx.save();
@@ -174,7 +233,7 @@ function atualizarGrafico() {
         }
       },
 
-      /* ✅ TEXTO EM CIMA DAS BARRAS (NUNCA CORTA) */
+      /* ✅ Valores em cima das barras */
       {
         id: "labelsTopo",
         afterDatasetsDraw(chart) {
@@ -191,9 +250,47 @@ function atualizarGrafico() {
               ctx.fillText(
                 valor.toLocaleString("pt-BR"),
                 bar.x,
-                bar.y - 8
+                bar.y - 6
               );
             }
+          });
+
+          ctx.restore();
+        }
+      },
+
+      /* ✅ Separação visual das semanas */
+      {
+        id: "separacaoSemanas",
+        afterDraw(chart) {
+          const { ctx, scales, chartArea } = chart;
+          const xScale = scales.x;
+          if (!xScale) return;
+
+          ctx.save();
+          ctx.strokeStyle = "rgba(255,255,255,0.35)";
+          ctx.fillStyle = "#e5e7eb";
+          ctx.lineWidth = 1;
+          ctx.textAlign = "center";
+          ctx.font = "12px Arial";
+
+          Object.entries(intervalosSemanas).forEach(([semana, intervalo]) => {
+            const xInicio = xScale.getPixelForValue(intervalo.inicio);
+            const xFim = xScale.getPixelForValue(intervalo.fim);
+            const xCentro = (xInicio + xFim) / 2;
+
+            // Linha vertical indicando início da semana
+            ctx.beginPath();
+            ctx.moveTo(xInicio, chartArea.top);
+            ctx.lineTo(xInicio, chartArea.bottom);
+            ctx.stroke();
+
+            // Texto "Sem X" centralizado
+            ctx.fillText(
+              semana,
+              xCentro,
+              chartArea.bottom + 20
+            );
           });
 
           ctx.restore();

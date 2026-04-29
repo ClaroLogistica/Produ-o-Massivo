@@ -125,7 +125,7 @@ function atualizarGrafico() {
   const labels = Array.from({ length: 31 }, (_, i) => i + 1);
   const valores = Array(31).fill(0);
 
-  // Dados filtrados
+  // Aplicando filtros
   const dadosFiltrados = dados
     .filter(d => !localAtivo || d["Local"] === localAtivo)
     .filter(d => !terminalAtivo || d["Terminais"] === terminalAtivo);
@@ -135,58 +135,58 @@ function atualizarGrafico() {
     if (dia) valores[dia - 1] += Number(d.Quantidade || 0);
   });
 
-  // Intervalos de semanas baseados no Excel
-  const intervalosSemanas = {};
+  // Descobrir início e fim de cada semana (baseado no Excel)
+  const semanas = {};
   dadosFiltrados.forEach(d => {
-    let semanaValor = null;
-
+    let semana = null;
     Object.keys(d).forEach(k => {
       if (k.toLowerCase().includes("semana")) {
-        semanaValor = d[k];
+        semana = d[k];
       }
     });
 
-    if (!semanaValor) return;
+    if (!semana) return;
 
     const dia = extrairDia(d.Data);
     if (!dia) return;
 
-    if (!intervalosSemanas[semanaValor]) {
-      intervalosSemanas[semanaValor] = { inicio: dia, fim: dia };
+    if (!semanas[semana]) {
+      semanas[semana] = { inicio: dia, fim: dia };
     } else {
-      intervalosSemanas[semanaValor].inicio = Math.min(intervalosSemanas[semanaValor].inicio, dia);
-      intervalosSemanas[semanaValor].fim = Math.max(intervalosSemanas[semanaValor].fim, dia);
+      semanas[semana].inicio = Math.min(semanas[semana].inicio, dia);
+      semanas[semana].fim = Math.max(semanas[semana].fim, dia);
     }
   });
 
   if (chart) chart.destroy();
-
   const canvas = document.getElementById("graficoDiario");
 
   chart = new Chart(canvas, {
     type: "bar",
     data: {
       labels,
-      datasets: [
-        {
-          data: valores,
-          backgroundColor: "rgba(0,0,0,0)",
-          borderRadius: 6
-        }
-      ]
+      datasets: [{
+        data: valores,
+        backgroundColor: "rgba(0,0,0,0)",
+        borderRadius: 6
+      }]
     },
     options: {
       responsive: true,
       animation: false,
+
+      // ✅ espaço extra apenas abaixo do eixo X
       layout: {
         padding: {
-          top: 32,
-          bottom: 40
+          top: 28,
+          bottom: 60
         }
       },
+
       plugins: {
         legend: { display: false }
       },
+
       scales: {
         x: {
           grid: { display: false },
@@ -197,55 +197,55 @@ function atualizarGrafico() {
         }
       }
     },
+
+    // ✅ AGORA SIM: array de plugins EXPLÍCITO
     plugins: [
 
-      /* ✅ Degradê AZUL → PRETO por coluna */
+      // Degradê AZUL → PRETO por coluna
       {
         id: "gradientePorBarra",
         beforeDatasetsDraw(chart) {
           const { ctx } = chart;
-          const bars = chart.getDatasetMeta(0).data;
+          const barras = chart.getDatasetMeta(0).data;
 
-          bars.forEach(bar => {
-            const gradient = ctx.createLinearGradient(
+          barras.forEach(barra => {
+            const grad = ctx.createLinearGradient(
               0,
-              bar.base,
+              barra.base,
               0,
-              bar.y
+              barra.y
             );
 
-            gradient.addColorStop(0, "rgba(2, 6, 23, 1)");   // preto (fundo)
-            gradient.addColorStop(1, "rgba(56, 189, 248, 1)"); // azul topo
+            grad.addColorStop(0, "#020617"); // preto (fundo)
+            grad.addColorStop(1, "#38bdf8"); // azul
 
             ctx.save();
-            ctx.fillStyle = gradient;
+            ctx.fillStyle = grad;
             ctx.fillRect(
-              bar.x - bar.width / 2,
-              bar.y,
-              bar.width,
-              bar.base - bar.y
+              barra.x - barra.width / 2,
+              barra.y,
+              barra.width,
+              barra.base - barra.y
             );
             ctx.restore();
           });
         }
       },
 
-      /* ✅ Valores em cima das barras */
+      // Valores em cima das barras
       {
-        id: "labelsTopo",
+        id: "valoresTopo",
         afterDatasetsDraw(chart) {
           const { ctx } = chart;
           ctx.save();
           ctx.fillStyle = "#e5e7eb";
           ctx.font = "11px Arial";
           ctx.textAlign = "center";
-          ctx.textBaseline = "bottom";
 
           chart.getDatasetMeta(0).data.forEach((bar, i) => {
-            const valor = valores[i];
-            if (valor > 0) {
+            if (valores[i] > 0) {
               ctx.fillText(
-                valor.toLocaleString("pt-BR"),
+                valores[i].toLocaleString("pt-BR"),
                 bar.x,
                 bar.y - 6
               );
@@ -256,39 +256,30 @@ function atualizarGrafico() {
         }
       },
 
-      /* ✅ Separação visual das semanas */
+      // ✅ Rótulos de semana FORA do gráfico (correto)
       {
-        id: "separacaoSemanas",
+        id: "rotulosSemanas",
         afterDraw(chart) {
           const { ctx, scales, chartArea } = chart;
           const xScale = scales.x;
 
           ctx.save();
-          ctx.strokeStyle = "rgba(255,255,255,0.35)";
-          ctx.fillStyle = "#e5e7eb";
-          ctx.lineWidth = 1;
-          ctx.textAlign = "center";
+          ctx.fillStyle = "#cbd5e1";
           ctx.font = "12px Arial";
+          ctx.textAlign = "center";
 
-          Object.entries(intervalosSemanas).forEach(([semana, intervalo]) => {
+          Object.entries(semanas).forEach(([sem, intervalo]) => {
             const idxInicio = intervalo.inicio - 1;
             const idxFim = intervalo.fim - 1;
 
-            const xInicio = xScale.getPixelForTick(idxInicio);
+            const xIni = xScale.getPixelForTick(idxInicio);
             const xFim = xScale.getPixelForTick(idxFim);
-            const xCentro = (xInicio + xFim) / 2;
+            const xCentro = (xIni + xFim) / 2;
 
-            // linha vertical
-            ctx.beginPath();
-            ctx.moveTo(xInicio, chartArea.top);
-            ctx.lineTo(xInicio, chartArea.bottom);
-            ctx.stroke();
-
-            // texto da semana
             ctx.fillText(
-              semana,
+              sem,
               xCentro,
-              chartArea.bottom + 22
+              chartArea.bottom + 20
             );
           });
 

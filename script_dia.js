@@ -109,45 +109,60 @@ function atualizarGrafico() {
 
   if (chart) chart.destroy();
 
-  chart = new Chart(document.getElementById("graficoDiario"), {
+  const canvas = document.getElementById("graficoDiario");
+  const ctx = canvas.getContext("2d");
+
+  /* ===== DEGRADÊ AZUL (TOPO FORTE → BASE TRANSPARENTE) ===== */
+  const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  gradient.addColorStop(0, "rgba(56, 189, 248, 1)");   // azul forte (topo)
+  gradient.addColorStop(1, "rgba(56, 189, 248, 0.1)"); // azul transparente (base)
+
+  chart = new Chart(canvas, {
     type: "bar",
     data: {
       labels,
       datasets: [{
         label: "Produção por Dia",
         data: valores,
-        backgroundColor: "#38bdf8"
+        backgroundColor: gradient
       }]
     },
     options: {
-  animation: false,
-  plugins: {
-    legend: { display: false }
-  },
-  scales: {
-    x: {
-      grid: { display: false },   // remove linhas verticais
-      ticks: { color: "#e5e7eb" }
-    },
-    y: {
-      display: false              // 🔥 remove eixo Y inteiro
-    }
-  }
-}
+      responsive: true,
+      animation: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: "#e5e7eb" }
+        },
+        y: {
+          display: false   // remove eixo Y (números e linha)
+        }
       }
     },
     plugins: [{
-      id: "labels",
+      id: "labelsTopo",
       afterDatasetsDraw(chart) {
         const { ctx } = chart;
         ctx.save();
         ctx.fillStyle = "#e5e7eb";
         ctx.font = "11px Arial";
         ctx.textAlign = "center";
+
         chart.getDatasetMeta(0).data.forEach((bar, i) => {
-          const v = valores[i];
-          if (v > 0) ctx.fillText(v.toLocaleString("pt-BR"), bar.x, bar.y - 5);
+          const valor = valores[i];
+          if (valor > 0) {
+            ctx.fillText(
+              valor.toLocaleString("pt-BR"),
+              bar.x,
+              bar.y - 6
+            );
+          }
         });
+
         ctx.restore();
       }
     }]

@@ -4,24 +4,13 @@
   <meta charset="UTF-8">
   <title>Dashboard Produção</title>
 
-  <!-- CSS -->
   <link rel="stylesheet" href="style.css">
 
-  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <!-- XLSX -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
-<div class="barra-filtros">
-  <select id="select-local" class="filtro-select" multiple>
-  </select>
-
-  <button id="btn-filtros" class="btn-filtros">Filtros</button>
-</div>
-  
 <h1>Dashboard Produção</h1>
 
 <!-- KPIs -->
@@ -36,20 +25,39 @@
   </div>
 </div>
 
-<!-- RESUMO SEMANAL -->
+<!-- Resumo Semanal -->
 <h3>Resumo Semanal</h3>
 <div id="resumo-semanal" class="resumo-semanal"></div>
 
+<!-- ✅ BARRA DE FILTROS (NO LUGAR CERTO) -->
+<div class="barra-filtros">
+  <button id="btn-local" class="btn-filtros">Local ▾</button>
+  <button id="btn-filtros" class="btn-filtros">Filtros ▾</button>
+</div>
+
+<!-- Gráfico -->
 <div class="grafico-container">
   <canvas id="graficoDiario"></canvas>
   <div id="faixa-semanas"></div>
 </div>
 
-<!-- JS -->
-<script src="script_dia.js"></script>
+<!-- ===== MODAL LOCAL ===== -->
+<div id="modal-local" class="modal">
+  <div class="modal-conteudo">
+    <h2>Local</h2>
 
-</body>
-  <div id="modal-filtros" class="modal">
+    <div id="lista-local" class="lista-tecnologia-scroll">
+      <!-- locais entram aqui -->
+    </div>
+
+    <div class="acoes-modal">
+      <button id="btn-aplicar-local">Aplicar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL FILTROS ===== -->
+<div id="modal-filtros" class="modal">
   <div class="modal-conteudo">
     <h2>Filtros</h2>
 
@@ -61,24 +69,20 @@
 
     <div class="bloco-filtro">
       <h4>Giro</h4>
-      <label><input type="checkbox" value="Alto Giro" class="chk-giro"> Alto Giro</label>
-      <label><input type="checkbox" value="Baixo Giro" class="chk-giro"> Baixo Giro</label>
+      <label><input type="checkbox" class="chk-giro" value="Alto Giro"> Alto Giro</label>
+      <label><input type="checkbox" class="chk-giro" value="Baixo Giro"> Baixo Giro</label>
     </div>
 
     <div class="bloco-filtro">
       <h4>Dep.</h4>
-      <label><input type="checkbox" value="UDEI" class="chk-dep"> UDEI</label>
-      <label><input type="checkbox" value="USAD" class="chk-dep"> USAD</label>
+      <label><input type="checkbox" class="chk-dep" value="UDEI"> UDEI</label>
+      <label><input type="checkbox" class="chk-dep" value="USAD"> USAD</label>
     </div>
 
-   
-<div class="bloco-filtro">
-  <h4>Tecnologia</h4>
-
-  <div id="lista-tecnologia" class="lista-tecnologia-scroll">
-    <!-- checkboxes entram aqui via JS -->
-  </div>
-</div>
+    <div class="bloco-filtro">
+      <h4>Tecnologia</h4>
+      <div id="lista-tecnologia" class="lista-tecnologia-scroll"></div>
+    </div>
 
     <div class="acoes-modal">
       <button id="btn-limpar">Limpar</button>
@@ -86,4 +90,7 @@
     </div>
   </div>
 </div>
+
+<script src="script_dia.js"></script>
+</body>
 </html>

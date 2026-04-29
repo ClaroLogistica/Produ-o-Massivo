@@ -112,11 +112,6 @@ function atualizarGrafico() {
   const canvas = document.getElementById("graficoDiario");
   const ctx = canvas.getContext("2d");
 
-  /* ===== DEGRADÊ AZUL (TOPO FORTE → BASE TRANSPARENTE) ===== */
-  const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-  gradient.addColorStop(0, "rgba(56, 189, 248, 1)");   // azul forte (topo)
-  gradient.addColorStop(1, "rgba(56, 189, 248, 0.1)"); // azul transparente (base)
-
   chart = new Chart(canvas, {
     type: "bar",
     data: {
@@ -124,12 +119,38 @@ function atualizarGrafico() {
       datasets: [{
         label: "Produção por Dia",
         data: valores,
-        backgroundColor: gradient
+
+        // ✅ DEGRADÊ POR BARRA (FUNÇÃO)
+        backgroundColor: context => {
+          const { chart } = context;
+          const { ctx, chartArea } = chart;
+          if (!chartArea) return null;
+
+          const gradient = ctx.createLinearGradient(
+            0,
+            chartArea.bottom,
+            0,
+            chartArea.top
+          );
+
+          gradient.addColorStop(0, "rgba(56, 189, 248, 0.15)");
+          gradient.addColorStop(1, "rgba(56, 189, 248, 1)");
+
+          return gradient;
+        }
       }]
     },
     options: {
       responsive: true,
       animation: false,
+
+      // ✅ RESERVA ESPAÇO NO TOPO PARA OS RÓTULOS
+      layout: {
+        padding: {
+          top: 25
+        }
+      },
+
       plugins: {
         legend: { display: false }
       },
@@ -139,10 +160,12 @@ function atualizarGrafico() {
           ticks: { color: "#e5e7eb" }
         },
         y: {
-          display: false   // remove eixo Y (números e linha)
+          display: false
         }
       }
     },
+
+    // ✅ VALORES EM CIMA DAS BARRAS (SEM CORTAR)
     plugins: [{
       id: "labelsTopo",
       afterDatasetsDraw(chart) {
@@ -151,6 +174,7 @@ function atualizarGrafico() {
         ctx.fillStyle = "#e5e7eb";
         ctx.font = "11px Arial";
         ctx.textAlign = "center";
+        ctx.textBaseline = "bottom";
 
         chart.getDatasetMeta(0).data.forEach((bar, i) => {
           const valor = valores[i];
@@ -168,7 +192,6 @@ function atualizarGrafico() {
     }]
   });
 }
-
 /* ===== RESUMO SEMANAL ===== */
 function atualizarResumoSemanal() {
   const container = document.getElementById("resumo-semanal");

@@ -110,47 +110,24 @@ function atualizarGrafico() {
   if (chart) chart.destroy();
 
   const canvas = document.getElementById("graficoDiario");
+  const ctx = canvas.getContext("2d");
 
   chart = new Chart(canvas, {
     type: "bar",
     data: {
       labels,
       datasets: [{
-        label: "Produção por Dia",
         data: valores,
-
-        /* ✅ DEGRADÊ REAL POR COLUNA */
-        backgroundColor: ctx => {
-          const element = ctx.element;
-          if (!element) return "#38bdf8";
-
-          const gradient = ctx.chart.ctx.createLinearGradient(
-            0,
-            element.base,
-            0,
-            element.y
-          );
-
-          gradient.addColorStop(0, "rgba(56, 189, 248, 0.15)");
-          gradient.addColorStop(1, "rgba(56, 189, 248, 1)");
-
-          return gradient;
-        },
-
+        backgroundColor: "#00000000", // transparente (vamos desenhar manualmente)
         borderRadius: 6
       }]
     },
     options: {
       responsive: true,
       animation: false,
-
-      /* ✅ espaço extra no topo para não cortar valor */
       layout: {
-        padding: {
-          top: 28
-        }
+        padding: { top: 34 } // ✅ evita cortar o valor da barra mais alta
       },
-
       plugins: {
         legend: { display: false }
       },
@@ -164,32 +141,65 @@ function atualizarGrafico() {
         }
       }
     },
+    plugins: [
 
-    /* ✅ VALORES EM CIMA (SEM CORTAR) */
-    plugins: [{
-      id: "valoresTopo",
-      afterDatasetsDraw(chart) {
-        const { ctx } = chart;
-        ctx.save();
-        ctx.fillStyle = "#e5e7eb";
-        ctx.font = "11px Arial";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "bottom";
+      /* ✅ DESENHA DEGRADÊ POR COLUNA */
+      {
+        id: "gradientePorBarra",
+        beforeDatasetsDraw(chart) {
+          const { ctx } = chart;
+          const bars = chart.getDatasetMeta(0).data;
 
-        chart.getDatasetMeta(0).data.forEach((bar, i) => {
-          const valor = valores[i];
-          if (valor > 0) {
-            ctx.fillText(
-              valor.toLocaleString("pt-BR"),
-              bar.x,
-              bar.y - 8
+          bars.forEach(bar => {
+            const gradient = ctx.createLinearGradient(
+              0,
+              bar.base,
+              0,
+              bar.y
             );
-          }
-        });
 
-        ctx.restore();
+            gradient.addColorStop(0, "rgba(56, 189, 248, 0.15)");
+            gradient.addColorStop(1, "rgba(56, 189, 248, 1)");
+
+            ctx.save();
+            ctx.fillStyle = gradient;
+            ctx.fillRect(
+              bar.x - bar.width / 2,
+              bar.y,
+              bar.width,
+              bar.base - bar.y
+            );
+            ctx.restore();
+          });
+        }
+      },
+
+      /* ✅ TEXTO EM CIMA DAS BARRAS (NUNCA CORTA) */
+      {
+        id: "labelsTopo",
+        afterDatasetsDraw(chart) {
+          const { ctx } = chart;
+          ctx.save();
+          ctx.fillStyle = "#e5e7eb";
+          ctx.font = "11px Arial";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "bottom";
+
+          chart.getDatasetMeta(0).data.forEach((bar, i) => {
+            const valor = valores[i];
+            if (valor > 0) {
+              ctx.fillText(
+                valor.toLocaleString("pt-BR"),
+                bar.x,
+                bar.y - 8
+              );
+            }
+          });
+
+          ctx.restore();
+        }
       }
-    }]
+    ]
   });
 }
 /* ===== RESUMO SEMANAL ===== */
